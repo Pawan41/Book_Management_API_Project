@@ -188,14 +188,21 @@ Parameters       isbn
 Method           PUT
 */
 
-shapeAi.put("/book/update/:isbn", (request, response) => {
-    database.books.forEach((book) => {
-        if (book.ISBN === request.params.isbn) {
-            book.title = request.body.bookTitle;
-            return;
+shapeAi.put("/book/update/:isbn", async (request, response) => {
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: request.params.isbn,
+        },
+        {
+            title: request.body.bookTitle,
+        },
+        {
+            new: true,
         }
-    });
-    return response.json({ books: database.books });
+
+    );
+
+    return response.json({ books: updatedBook });
 
 });
 
@@ -203,23 +210,57 @@ shapeAi.put("/book/update/:isbn", (request, response) => {
 
 /*
 Route            /book/author/update
-Description      update title of a book
+Description      update/add new author 
 Access           PUBLIC
 Parameters       isbn
 Method           PUT
 */
-shapeAi.put("/book/author/update/:isbn", (request, response) => {
+shapeAi.put("/book/author/update/:isbn", async (request, response) => {
     //update the book database
-    database.books.forEach((book) => {
-        if (book.ISBN === request.params.isbn)
-            return book.authors.push(request.body.newAuthor);
-    });
+    const updatedBook = await BookModel.findOneAndUpdate(
+        {
+            ISBN: request.params.isbn,
+        },
+        {
+            $addToSet:{
+                authors: request.body.newAuthor,
+            },
+        },
+        {
+            new:true,
+        }
+
+    );
+
+    // old code
+    // database.books.forEach((book) => {
+    //     if (book.ISBN === request.params.isbn)
+    //         return book.authors.push(request.body.newAuthor);
+    // });
+
+
     //update the author database
-    database.authors.forEach((author) => {
-        if (author.id === request.body.newAuthor)
-            return author.books.push(request.params.isbn);
-    });
-    return response.json({ books: database.books, authors: database.authors, message: "New author was added" });
+    const updatedAuthor = await AuthorModel.findOneAndUpdate(
+        {
+            id:request.body.newAuthor,
+        },
+        {
+            $addToSet:{
+               books:request.params.isbn,
+            },
+        },
+        {
+            new:true,
+        }
+
+    );
+     //  old code
+    // database.authors.forEach((author) => {
+    //     if (author.id === request.body.newAuthor)
+    //         return author.books.push(request.params.isbn);
+    // });
+
+    return response.json({ books: updatedBook, authors: updatedAuthor , message: "New author was added" });
 });
 
 /*
